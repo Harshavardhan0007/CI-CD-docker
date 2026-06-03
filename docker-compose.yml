@@ -1,0 +1,20 @@
+services:
+  mongo: 
+    image: mongo:7
+    container_name: mongo 
+    ports:
+      - "27017:27017"
+
+  frontend-container:
+    image: harshapillari03/frontend-image:v2
+    ports:
+      - "8060:80"
+
+  backend-container:
+    image: harshapillari03/backend-image:v1
+    ports:
+      - "4000:4000"
+    environment:
+       MONGO_URI: mongodb://mongo:27017/todos
+    depends_on:
+      - mongo 

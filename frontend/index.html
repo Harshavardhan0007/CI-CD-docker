@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>TodoDock</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: monospace; background: #0d0f14; color: #e8eaf0; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 48px 16px; }
+  h1 { font-size: 2rem; margin-bottom: 8px; color: #00e5a0; }
+  .sub { color: #5a6070; font-size: 0.75rem; margin-bottom: 32px; }
+  .row { display: flex; gap: 10px; margin-bottom: 24px; width: 100%; max-width: 520px; }
+  input { flex: 1; background: #151820; border: 1px solid #1f2430; border-radius: 8px; color: #e8eaf0; font-family: monospace; font-size: 0.9rem; padding: 12px 16px; outline: none; }
+  input:focus { border-color: #00e5a0; }
+  button.add { background: #00e5a0; color: #000; border: none; border-radius: 8px; font-weight: 700; padding: 12px 20px; cursor: pointer; }
+  .list { width: 100%; max-width: 520px; display: flex; flex-direction: column; gap: 8px; }
+  .item { background: #151820; border: 1px solid #1f2430; border-radius: 8px; padding: 14px 16px; display: flex; align-items: center; gap: 12px; }
+  .item.done { opacity: 0.45; }
+  .item.done .txt { text-decoration: line-through; color: #5a6070; }
+  .chk { width: 20px; height: 20px; border-radius: 5px; border: 2px solid #1f2430; background: transparent; cursor: pointer; flex-shrink: 0; }
+  .chk.checked { background: #00e5a0; border-color: #00e5a0; color: #000; font-size: 11px; display: flex; align-items: center; justify-content: center; }
+  .txt { flex: 1; font-size: 0.9rem; }
+  .del { background: transparent; border: none; color: #5a6070; cursor: pointer; font-size: 1rem; padding: 4px 6px; border-radius: 4px; }
+  .del:hover { color: #ff5470; }
+  .empty { color: #5a6070; text-align: center; padding: 40px; }
+  .err { color: #ff5470; font-size: 0.8rem; margin-bottom: 16px; }
+</style>
+</head>
+<body>
+<h1>TodoDock</h1>
+<p class="sub">React + Node + MongoDB · Docker Compose</p>
+<div id="err" class="err" style="display:none">⚠ Backend unreachable — run: docker compose up</div>
+<div class="row">
+  <input id="inp" type="text" placeholder="New task..." />
+  <button class="add" onclick="add()">+ Add</button>
+</div>
+<div class="list" id="list"><div class="empty">Loading...</div></div>
+
+<script>
+  const API = 'http://localhost:4000/api';
+
+  async function load() {
+    try {
+      const res = await fetch(`${API}/todos`);
+      const todos = await res.json();
+      document.getElementById('err').style.display = 'none';
+      const list = document.getElementById('list');
+      if (!todos.length) { list.innerHTML = '<div class="empty">No tasks yet.</div>'; return; }
+      list.innerHTML = todos.map(t => `
+        <div class="item ${t.done ? 'done' : ''}" id="i-${t._id}">
+          <button class="chk ${t.done ? 'checked' : ''}" onclick="toggle('${t._id}',${!t.done})">${t.done ? '✓' : ''}</button>
+          <span class="txt">${t.text.replace(/</g,'&lt;')}</span>
+          <button class="del" onclick="del('${t._id}')">✕</button>
+        </div>`).join('');
+    } catch {
+      document.getElementById('err').style.display = 'block';
+      document.getElementById('list').innerHTML = '<div class="empty">Could not connect.</div>';
+    }
+  }
+
+  async function add() {
+    const inp = document.getElementById('inp');
+    const text = inp.value.trim();
+    if (!text) return;
+    inp.value = '';
+    await fetch(`${API}/todos`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({text}) });
+    load();
+  }
+
+  async function toggle(id, done) {
+    await fetch(`${API}/todos/${id}`, { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify({done}) });
+    load();
+  }
+
+  async function del(id) {
+    await fetch(`${API}/todos/${id}`, { method: 'DELETE' });
+    load();
+  }
+
+  document.getElementById('inp').addEventListener('keydown', e => { if (e.key === 'Enter') add(); });
+  load();
+</script>
+</body>
+</html>
