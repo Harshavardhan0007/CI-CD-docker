@@ -6,12 +6,12 @@ services:
       - "27017:27017"
 
   frontend-container:
-    image: harshapillari03/frontend-image:v2
+    image: harshapillari03/frontend-image:latest
     ports:
       - "8060:80"
 
   backend-container:
-    image: harshapillari03/backend-image:v1
+    image: harshapillari03/backend-image:latest
     ports:
       - "4000:4000"
     environment:
